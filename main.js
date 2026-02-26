@@ -48,7 +48,7 @@ scene.add(terrain);
 // Load GLB model
 const loader = new GLTFLoader();
 
-loader.load('/public/hotelss.glb', function (gltf) {
+loader.load('hotelss.glb', function (gltf) {
   const model = gltf.scene;
   model.position.set(0, 2, 0);
   model.scale.set(2, 2, 2);
