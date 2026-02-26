@@ -30,28 +30,25 @@ directionalLight.position.set(5, 10, 7);
 scene.add(directionalLight);
 
 const loader = new GLTFLoader();
+loader.load('hotelss.glb', (gltf) => {
 
-loader.load(
-  'hotelss.glb',
-  (gltf) => {
-    const model = gltf.scene;
+  const model = gltf.scene;
 
-    scene.add(model);
+  model.traverse((child) => {
+    if (child.isMesh) {
+      child.material = new THREE.MeshStandardMaterial({
+        color: 0xaaaaaa
+      });
+    }
+  });
 
-    model.position.set(0, 0, 0);
-    model.scale.set(1, 1, 1);
+  scene.add(model);
 
-    camera.position.set(0, 0, 10);
-    controls.target.set(0, 0, 0);
-    controls.update();
+  camera.position.set(0, 0, 10);
+  controls.target.set(0, 0, 0);
+  controls.update();
 
-    console.log("Model loaded successfully");
-  },
-  undefined,
-  (error) => {
-    console.error("GLB Load Error:", error);
-  }
-);
+});
 
 function animate() {
   requestAnimationFrame(animate);
