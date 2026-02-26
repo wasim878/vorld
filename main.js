@@ -36,25 +36,20 @@ loader.load(
   (gltf) => {
     const model = gltf.scene;
 
-    const box = new THREE.Box3().setFromObject(model);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-
-    model.position.sub(center);
-
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 5 / maxDim;
-    model.scale.setScalar(scale);
-
     scene.add(model);
 
-    camera.position.set(0, 2, 8);
+    model.position.set(0, 0, 0);
+    model.scale.set(1, 1, 1);
+
+    camera.position.set(0, 0, 10);
     controls.target.set(0, 0, 0);
     controls.update();
+
+    console.log("Model loaded successfully");
   },
   undefined,
   (error) => {
-    console.error('Error loading GLB:', error);
+    console.error("GLB Load Error:", error);
   }
 );
 
