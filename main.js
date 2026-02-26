@@ -22,9 +22,6 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-let mixer;
-const clock = new THREE.Clock();
-
 const ambientLight = new THREE.AmbientLight(0xffffff, 1);
 scene.add(ambientLight);
 
@@ -32,30 +29,20 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
 directionalLight.position.set(5, 10, 7);
 scene.add(directionalLight);
 
-// Extra fill light
-const fillLight = new THREE.DirectionalLight(0xffffff, 1);
-fillLight.position.set(-5, 5, -5);
-scene.add(fillLight);
-
-// Slight exposure boost
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.3;
-
 const loader = new GLTFLoader();
 loader.load('ahad.glb', (gltf) => {
 
   const model = gltf.scene;
 
+  model.traverse((child) => {
+    if (child.isMesh) {
+      child.material = new THREE.MeshStandardMaterial({
+        color: 0xaaaaaa
+      });
+    }
+  });
 
   scene.add(model);
-
-  // Play animation if available
-if (gltf.animations.length > 0) {
-  mixer = new THREE.AnimationMixer(model);
-  const action = mixer.clipAction(gltf.animations[0]);
-  action.play();
-}
 
   camera.position.set(0, 0, 10);
   controls.target.set(0, 0, 0);
@@ -65,13 +52,10 @@ if (gltf.animations.length > 0) {
 
 function animate() {
   requestAnimationFrame(animate);
-
-  const delta = clock.getDelta();
-  if (mixer) mixer.update(delta);
-
   controls.update();
   renderer.render(scene, camera);
 }
+
 animate();
 
 window.addEventListener('resize', () => {
