@@ -30,7 +30,7 @@ directionalLight.position.set(5, 10, 7);
 scene.add(directionalLight);
 
 const loader = new GLTFLoader();
-loader.load('hotelss.glb', (gltf) => {
+loader.load('ahad.glb', (gltf) => {
 
   const model = gltf.scene;
 
