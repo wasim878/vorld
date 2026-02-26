@@ -1,9 +1,10 @@
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?module';
+import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js?module';
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff); // WHITE background
+scene.background = new THREE.Color(0xffffff);
 
 const camera = new THREE.PerspectiveCamera(
   60,
@@ -18,11 +19,9 @@ renderer.setPixelRatio(window.devicePixelRatio);
 document.body.style.margin = "0";
 document.body.appendChild(renderer.domElement);
 
-// Orbit controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-// Lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 1);
 scene.add(ambientLight);
 
@@ -30,7 +29,6 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
 directionalLight.position.set(5, 10, 7);
 scene.add(directionalLight);
 
-// Load GLB
 const loader = new GLTFLoader();
 
 loader.load(
@@ -38,21 +36,18 @@ loader.load(
   (gltf) => {
     const model = gltf.scene;
 
-    // Center model
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
 
     model.position.sub(center);
 
-    // Auto scale
     const maxDim = Math.max(size.x, size.y, size.z);
     const scale = 5 / maxDim;
     model.scale.setScalar(scale);
 
     scene.add(model);
 
-    // Position camera
     camera.position.set(0, 2, 8);
     controls.target.set(0, 0, 0);
     controls.update();
@@ -63,7 +58,6 @@ loader.load(
   }
 );
 
-// Animate
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
@@ -72,7 +66,6 @@ function animate() {
 
 animate();
 
-// Resize handling
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
