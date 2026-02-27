@@ -2,7 +2,7 @@ import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 import { OrbitControls } from 'https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js?module';
 
 import { VorldSpace } from './space.js';
-import { Ahad } from './ahad.js';
+import { VorldTerrainSystem } from './terrain.js';
 
 // ----------------------------------
 // SCENE
@@ -43,6 +43,8 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
 directionalLight.position.set(5, 10, 7);
 scene.add(directionalLight);
 
+VorldTerrainSystem.create(scene);
+
 // ----------------------------------
 // CLOCK
 // ----------------------------------
@@ -53,14 +55,13 @@ const clock = new THREE.Clock();
 // INIT ENTITIES
 // ----------------------------------
 
-Ahad.init(scene);
 
 // ----------------------------------
 // VORLD UPDATE LOOP
 // ----------------------------------
 
 function updateVorld(delta) {
-  Ahad.update(delta);
+ 
 }
 
 // ----------------------------------
