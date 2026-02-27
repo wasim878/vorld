@@ -1,7 +1,7 @@
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 import { GLTFLoader } from 'https://unpkg.com/three@0.152.2/examples/jsm/loaders/GLTFLoader.js?module';
 
-import { VorldSpace } from '../vorld/space.js';
+import { VorldSpace } from './space.js';
 
 class AhadEntity {
 
