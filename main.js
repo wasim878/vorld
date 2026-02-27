@@ -24,6 +24,11 @@ renderer.setPixelRatio(window.devicePixelRatio);
 document.body.style.margin = "0";
 document.body.appendChild(renderer.domElement);
 
+renderer.physicallyCorrectLights = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
