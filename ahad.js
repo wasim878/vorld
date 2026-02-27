@@ -15,7 +15,7 @@ class AhadEntity {
 
     this.loader.load('ahad.glb', (gltf) => {
 
-      this.model = gltf.scene;
+      this.model.scale.set(0.2, 0.2, 0.2);
 
     this.model.traverse((child) => {
   if (child.isMesh) {
@@ -54,8 +54,6 @@ class AhadEntity {
 
     if (!this.model) return;
 
-    // Example: slight idle rotation (just to show independence)
-    this.model.rotation.y += 0.2 * delta;
 
     // Sync with Vorld
     VorldSpace.updateCreationPosition(
