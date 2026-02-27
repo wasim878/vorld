@@ -1,8 +1,8 @@
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 import { OrbitControls } from 'https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js?module';
 
-import { VorldSpace } from './vorld/space.js';
-import { Ahad } from './entities/ahad.js';
+import { VorldSpace } from './space.js';
+import { Ahad } from './ahad.js';
 
 // ----------------------------------
 // SCENE
