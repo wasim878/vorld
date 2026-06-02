@@ -1,8 +1,8 @@
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 
-import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
 
 
 // Scene
@@ -23,7 +23,7 @@ camera.position.set(0, 2, 5);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
-    antialias:true
+    antialias: true
 });
 
 renderer.setSize(
@@ -50,11 +50,10 @@ controls.enableDamping = true;
 
 
 // Lights
-const ambientLight =
-    new THREE.AmbientLight(
-        0xffffff,
-        2
-    );
+const ambientLight = new THREE.AmbientLight(
+    0xffffff,
+    2
+);
 
 scene.add(ambientLight);
 
@@ -74,38 +73,38 @@ scene.add(directionalLight);
 
 
 // Ground
-const ground =
-    new THREE.Mesh(
-        new THREE.PlaneGeometry(50,50),
-        new THREE.MeshStandardMaterial({
-            color:0x222222
-        })
-    );
+const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(50, 50),
+    new THREE.MeshStandardMaterial({
+        color: 0x222222
+    })
+);
 
-ground.rotation.x =
-    -Math.PI/2;
+ground.rotation.x = -Math.PI / 2;
 
 scene.add(ground);
 
 
-// Load GLB
-const loader =
-    new GLTFLoader();
+// GLB Loader
+const loader = new GLTFLoader();
 
 loader.load(
-    './sahilmodel.glb',
+    "./Sahilmodel.glb",
 
-    (gltf)=>{
+    (gltf) => {
 
-        const model =
-            gltf.scene;
+        const model = gltf.scene;
 
-        model.position.set(
-            0,
-            0,
-            0
-        );
+        // Auto center model
+        const box =
+            new THREE.Box3().setFromObject(model);
 
+        const center =
+            box.getCenter(new THREE.Vector3());
+
+        model.position.sub(center);
+
+        // Optional scaling
         model.scale.set(
             1,
             1,
@@ -114,31 +113,29 @@ loader.load(
 
         scene.add(model);
 
+        console.log("Model Loaded");
+    },
+
+    (xhr) => {
+
         console.log(
-            'Model Loaded'
+            (xhr.loaded / xhr.total * 100).toFixed(0)
+            + "% loaded"
         );
     },
 
-    (progress)=>{
-
-        console.log(
-            progress.loaded /
-            progress.total *
-            100 + '%'
-        );
-    },
-
-    (error)=>{
+    (error) => {
 
         console.error(
+            "GLB Error:",
             error
         );
     }
 );
 
 
-// Animate
-function animate(){
+// Animation Loop
+function animate() {
 
     requestAnimationFrame(
         animate
@@ -157,8 +154,8 @@ animate();
 
 // Resize
 window.addEventListener(
-    'resize',
-    ()=>{
+    "resize",
+    () => {
 
         camera.aspect =
             window.innerWidth /
