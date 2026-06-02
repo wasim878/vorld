@@ -1,15 +1,14 @@
-console.log("NEW MAIN JS LOADED");
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js?module';
 
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import { OrbitControls }
+from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js?module';
 
-import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
-
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
+import { RGBELoader }
+from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/RGBELoader.js?module';
 
 
 // Scene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("red");
 
 
 // Camera
@@ -37,100 +36,128 @@ renderer.setPixelRatio(
     window.devicePixelRatio
 );
 
+renderer.toneMapping =
+    THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure = 1.2;
+
+renderer.outputColorSpace =
+    THREE.SRGBColorSpace;
+
 document.body.appendChild(
     renderer.domElement
 );
 
 
-// Controls
-const controls = new OrbitControls(
-    camera,
-    renderer.domElement
-);
+// Orbit Controls
+const controls =
+    new OrbitControls(
+        camera,
+        renderer.domElement
+    );
 
 controls.enableDamping = true;
 
 
-// Lights
-const ambientLight = new THREE.AmbientLight(
-    0xffffff,
-    2
-);
-
-scene.add(ambientLight);
-
-const directionalLight =
-    new THREE.DirectionalLight(
-        0xffffff,
-        3
+// HDRI
+const pmremGenerator =
+    new THREE.PMREMGenerator(
+        renderer
     );
 
-directionalLight.position.set(
-    5,
-    10,
-    5
-);
+new RGBELoader()
+.load(
 
-scene.add(directionalLight);
+    'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr',
+
+    (hdrTexture) => {
+
+        const envMap =
+            pmremGenerator
+            .fromEquirectangular(
+                hdrTexture
+            ).texture;
+
+        scene.environment =
+            envMap;
+
+        scene.background =
+            envMap;
+
+        hdrTexture.dispose();
+        pmremGenerator.dispose();
+    }
+
+);
 
 
 // Ground
-const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(50, 50),
-    new THREE.MeshStandardMaterial({
-        color: 0x222222
-    })
+const ground =
+    new THREE.Mesh(
+
+        new THREE.PlaneGeometry(
+            50,
+            50
+        ),
+
+        new THREE.MeshStandardMaterial({
+            color: 0x444444,
+            roughness: 1
+        })
+
+    );
+
+ground.rotation.x =
+    -Math.PI / 2;
+
+scene.add(
+    ground
 );
 
-ground.rotation.x = -Math.PI / 2;
 
-scene.add(ground);
+// Test Sphere
+const sphere =
+    new THREE.Mesh(
 
-
-// GLB Loader
-const loader = new GLTFLoader();
-
-loader.load(
-    "./Sahilmodel.glb",
-
-    (gltf) => {
-
-        const model = gltf.scene;
-
-        // Auto center model
-        const box =
-            new THREE.Box3().setFromObject(model);
-
-        const center =
-            box.getCenter(new THREE.Vector3());
-
-        model.position.sub(center);
-
-        // Optional scaling
-        model.scale.set(
+        new THREE.SphereGeometry(
             1,
-            1,
-            1
-        );
+            64,
+            64
+        ),
 
-        scene.add(model);
+        new THREE.MeshPhysicalMaterial({
 
-        console.log("Model Loaded");
-    },
+            color: 0xffffff,
 
-    (xhr) => {
+            metalness: 1,
 
-        console.log(
-            (xhr.loaded / xhr.total * 100).toFixed(0)
-            + "% loaded"
-        );
-    },
+            roughness: 0
 
-    (error) => {
+        })
 
-        console.error(
-            "GLB Error:",
-            error
+    );
+
+sphere.position.y = 1;
+
+scene.add(
+    sphere
+);
+
+
+// Resize
+window.addEventListener(
+    'resize',
+    () => {
+
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
         );
     }
 );
@@ -152,22 +179,3 @@ function animate() {
 }
 
 animate();
-
-
-// Resize
-window.addEventListener(
-    "resize",
-    () => {
-
-        camera.aspect =
-            window.innerWidth /
-            window.innerHeight;
-
-        camera.updateProjectionMatrix();
-
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-    }
-);
