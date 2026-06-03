@@ -253,7 +253,7 @@
     const SQUARE_SIZE = 3.5;
     const CENTER_X    = 1.8;
     const CENTER_Z    = 0;
-    const CAR_SPEED   = 0.02;
+    const CAR_SPEED   = 0.06;
 
     const squareWaypoints = [
       new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
