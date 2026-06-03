@@ -120,42 +120,46 @@
     // Load Sahil model
     const sahilLoader = new THREE.GLTFLoader();
     sahilLoader.load(
-      SAHIL_URL,
-      (gltf) => {
-        const model = gltf.scene;
+  SAHIL_URL,
+  (gltf) => {
 
-        const box    = new THREE.Box3().setFromObject(model);
-        const size   = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale  = 2 / maxDim;
+    console.log("========== MODEL INFO ==========");
+    console.log("Animations:", gltf.animations);
+    console.log("Animation Count:", gltf.animations.length);
 
-        model.scale.setScalar(scale);
-        model.position.sub(center.multiplyScalar(scale));
-        model.position.y += size.y * scale * 0.5;
-        model.position.x += 1.8;
+    gltf.animations.forEach((clip, index) => {
+      console.log(`Animation ${index}: ${clip.name}`);
+    });
 
-        model.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow    = true;
-            child.receiveShadow = true;
-          }
-        });
+    let boneCount = 0;
 
-        scene.add(model);
-        modelGroup = model;
-        onModelLoaded();
-      },
-      (xhr) => {
-        const pct = Math.round((xhr.loaded / xhr.total) * 100);
-        loadingEl.textContent = `Loading Sahil… ${pct}%`;
-      },
-      (err) => {
-        console.warn('Sahil model load failed, using placeholder:', err);
-        modelGroup = addPlaceholderModel();
-        modelGroup.position.x = 1.8;
+    gltf.scene.traverse((child) => {
+      if (child.isBone) {
+        boneCount++;
       }
-    );
+    });
+
+    console.log("Bone Count:", boneCount);
+
+    const model = gltf.scene;
+
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 2 / maxDim;
+
+    model.scale.setScalar(scale);
+    model.position.sub(center.multiplyScalar(scale));
+    model.position.y += size.y * scale * 0.5;
+    model.position.x += 1.8;
+
+    scene.add(model);
+    modelGroup = model;
+
+    onModelLoaded();
+  }
+);
 
     // ─── Car (WagonR) Model ───────────────────────────────────────
     const CAR_URL = './swift.glb';
