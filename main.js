@@ -161,28 +161,8 @@
   }
 );
 
-let sahilMixer;
-
-sahilLoader.load(
-  SAHIL_URL,
-  (gltf) => {
-
-    const model = gltf.scene;
-
-    sahilMixer = new THREE.AnimationMixer(model);
-
-    const idleAction = sahilMixer.clipAction(
-      gltf.animations[0]
-    );
-
-    idleAction.play();
-
-    scene.add(model);
-  }
-);
-
     // ─── Car (WagonR) Model ───────────────────────────────────────
-    const CAR_URL = './swift.glb';
+    const CAR_URL = './wagonR.glb';
 
     const carLoader = new THREE.GLTFLoader();
     carLoader.load(
