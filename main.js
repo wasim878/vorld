@@ -117,6 +117,8 @@
     let modelGroup = null;
     let carGroup   = null;
 
+    let sahilMixer = null;
+
     // Load Sahil model
     const sahilLoader = new THREE.GLTFLoader();
     sahilLoader.load(
@@ -143,6 +145,14 @@
 
     const model = gltf.scene;
 
+    sahilMixer = new THREE.AnimationMixer(model);
+
+const idleAction = sahilMixer.clipAction(
+    gltf.animations[0]
+);
+
+idleAction.play();
+
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
@@ -158,6 +168,26 @@
     modelGroup = model;
 
     onModelLoaded();
+  }
+);
+
+let sahilMixer;
+
+sahilLoader.load(
+  SAHIL_URL,
+  (gltf) => {
+
+    const model = gltf.scene;
+
+    sahilMixer = new THREE.AnimationMixer(model);
+
+    const idleAction = sahilMixer.clipAction(
+      gltf.animations[0]
+    );
+
+    idleAction.play();
+
+    scene.add(model);
   }
 );
 
@@ -273,6 +303,12 @@
 
     function animate() {
       requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+
+if (sahilMixer) {
+    sahilMixer.update(delta);
+}
 
       if (carGroup) {
         const target = squareWaypoints[waypointIndex];
