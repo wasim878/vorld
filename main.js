@@ -35,10 +35,8 @@
     controls.autoRotateSpeed = 1.2;
 
     // ─── Lighting ─────────────────────────────────────────────────
-    // Ambient
     scene.add(new THREE.AmbientLight(0x202040, 1.5));
 
-    // Key light (warm)
     const keyLight = new THREE.DirectionalLight(0xfff0d0, 2.5);
     keyLight.position.set(4, 6, 4);
     keyLight.castShadow = true;
@@ -46,12 +44,10 @@
     keyLight.shadow.mapSize.height = 2048;
     scene.add(keyLight);
 
-    // Rim light (cool teal)
     const rimLight = new THREE.DirectionalLight(0x7df3c0, 1.2);
     rimLight.position.set(-4, 2, -4);
     scene.add(rimLight);
 
-    // Fill light (soft blue)
     scene.add(new THREE.PointLight(0x4488ff, 0.8, 12));
 
     // ─── Ground plane ─────────────────────────────────────────────
@@ -71,20 +67,23 @@
     grid.position.y = 0.001;
     scene.add(grid);
 
-    // ─── Model loading ────────────────────────────────────────────
-    // 🔧 TO USE YOUR OWN MODEL:
-    //    Replace MODEL_URL below with the path to your .glb / .gltf file.
-    //    e.g. './models/my-world.glb'  or a full URL.
-    //
-    //    If MODEL_URL is null or loading fails, a procedural placeholder
-    //    (icosahedron + wireframe) is shown instead so the scene always works.
+    // ─── Loading manager ──────────────────────────────────────────
+    let loadedCount = 0;
+    const totalModels = 2;
 
-    const MODEL_URL = './Sahilmodel.glb';  // ← set your model path here
+    function onModelLoaded() {
+      loadedCount++;
+      if (loadedCount >= totalModels) {
+        loadingEl.style.display = 'none';
+      }
+    }
+
+    // ─── Sahil Model ──────────────────────────────────────────────
+    const SAHIL_URL = './Sahilmodel.glb';
 
     function addPlaceholderModel() {
       const group = new THREE.Group();
 
-      // Solid core
       const geo = new THREE.IcosahedronGeometry(1, 1);
       const mat = new THREE.MeshStandardMaterial({
         color: 0x2255aa,
@@ -96,7 +95,6 @@
       mesh.castShadow = true;
       group.add(mesh);
 
-      // Wireframe shell
       const wireMat = new THREE.MeshBasicMaterial({
         color: 0x7df3c0,
         wireframe: true,
@@ -105,7 +103,6 @@
       });
       group.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 1), wireMat));
 
-      // Floating ring
       const ringGeo = new THREE.TorusGeometry(1.6, 0.03, 8, 64);
       const ringMat = new THREE.MeshStandardMaterial({ color: 0x7df3c0, emissive: 0x3a9970, roughness: 0.4 });
       const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -114,54 +111,134 @@
 
       group.position.y = 1;
       scene.add(group);
-      loadingEl.style.display = 'none';
+      onModelLoaded();
 
       return group;
     }
 
     let modelGroup = null;
+    let carGroup   = null;
 
-    if (MODEL_URL) {
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        MODEL_URL,
-        (gltf) => {
-          const model = gltf.scene;
+    // Load Sahil model (centered / slightly to the right)
+    const sahilLoader = new THREE.GLTFLoader();
+    sahilLoader.load(
+      SAHIL_URL,
+      (gltf) => {
+        const model = gltf.scene;
 
-          // Auto-center and scale the model
-          const box    = new THREE.Box3().setFromObject(model);
-          const size   = box.getSize(new THREE.Vector3());
-          const center = box.getCenter(new THREE.Vector3());
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const scale  = 2 / maxDim;
+        const box    = new THREE.Box3().setFromObject(model);
+        const size   = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale  = 2 / maxDim;
 
-          model.scale.setScalar(scale);
-          model.position.sub(center.multiplyScalar(scale));
-          model.position.y += size.y * scale * 0.5; // sit on ground
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+        model.position.y += size.y * scale * 0.5;
 
-          model.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow    = true;
-              child.receiveShadow = true;
-            }
-          });
+        // Shift slightly to the right to make room for car on the left
+        model.position.x += 1.8;
 
-          scene.add(model);
-          modelGroup = model;
-          loadingEl.style.display = 'none';
-        },
-        (xhr) => {
-          const pct = Math.round((xhr.loaded / xhr.total) * 100);
-          loadingEl.textContent = `Loading… ${pct}%`;
-        },
-        (err) => {
-          console.warn('GLTF load failed, using placeholder:', err);
-          modelGroup = addPlaceholderModel();
-        }
-      );
-    } else {
-      modelGroup = addPlaceholderModel();
-    }
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow    = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        scene.add(model);
+        modelGroup = model;
+        onModelLoaded();
+      },
+      (xhr) => {
+        const pct = Math.round((xhr.loaded / xhr.total) * 100);
+        loadingEl.textContent = `Loading Sahil… ${pct}%`;
+      },
+      (err) => {
+        console.warn('Sahil model load failed, using placeholder:', err);
+        modelGroup = addPlaceholderModel();
+        modelGroup.position.x = 1.8;
+      }
+    );
+
+    // ─── Car (WagonR) Model ───────────────────────────────────────
+    const CAR_URL = './wagonR.glb';
+
+    const carLoader = new THREE.GLTFLoader();
+    carLoader.load(
+      CAR_URL,
+      (gltf) => {
+        const car = gltf.scene;
+
+        // Auto-center and scale
+        const box    = new THREE.Box3().setFromObject(car);
+        const size   = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale  = 2 / maxDim;
+
+        car.scale.setScalar(scale);
+        car.position.sub(center.multiplyScalar(scale));
+        car.position.y += size.y * scale * 0.5; // sit on ground
+
+        // Position to the LEFT of the Sahil model
+        car.position.x -= 1.8;
+
+        car.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow    = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        scene.add(car);
+        carGroup = car;
+        onModelLoaded();
+      },
+      (xhr) => {
+        const pct = Math.round((xhr.loaded / xhr.total) * 100);
+        loadingEl.textContent = `Loading Car… ${pct}%`;
+      },
+      (err) => {
+        console.warn('Car model load failed:', err);
+        // Fallback: simple box car placeholder
+        const group = new THREE.Group();
+
+        const bodyGeo = new THREE.BoxGeometry(1.8, 0.7, 0.9);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc2200, roughness: 0.4, metalness: 0.6 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.45;
+        body.castShadow = true;
+        group.add(body);
+
+        const roofGeo = new THREE.BoxGeometry(1.0, 0.5, 0.85);
+        const roof = new THREE.Mesh(roofGeo, bodyMat);
+        roof.position.set(-0.1, 1.0, 0);
+        roof.castShadow = true;
+        group.add(roof);
+
+        const wheelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 16);
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        const wheelPositions = [
+          [ 0.6, 0.25,  0.52],
+          [-0.6, 0.25,  0.52],
+          [ 0.6, 0.25, -0.52],
+          [-0.6, 0.25, -0.52],
+        ];
+        wheelPositions.forEach(([x, y, z]) => {
+          const w = new THREE.Mesh(wheelGeo, wheelMat);
+          w.rotation.z = Math.PI / 2;
+          w.position.set(x, y, z);
+          w.castShadow = true;
+          group.add(w);
+        });
+
+        group.position.x = -1.8;
+        scene.add(group);
+        carGroup = group;
+        onModelLoaded();
+      }
+    );
 
     // ─── Particle starfield ───────────────────────────────────────
     const starGeo = new THREE.BufferGeometry();
@@ -186,12 +263,6 @@
     function animate() {
       requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
-
-      // Gentle bob on placeholder
-      if (modelGroup && !MODEL_URL) {
-        modelGroup.position.y = 1 + Math.sin(t * 1.2) * 0.08;
-        modelGroup.rotation.y = t * 0.3;
-      }
 
       controls.update();
       renderer.render(scene, camera);
