@@ -3,7 +3,7 @@
     const loadingEl = document.getElementById('loading');
 
     const scene    = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0f);
+    scene.background = new THREE.Color(0xf5f5f5);
     scene.fog        = new THREE.FogExp2(0x0a0a0f, 0.04);
 
     // Camera
@@ -51,7 +51,7 @@
     // ─── Ground plane ─────────────────────────────────────────────
     const groundGeo = new THREE.PlaneGeometry(20, 20);
     const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x111120,
+      color: 0xffffff,
       roughness: 0.9,
       metalness: 0.1,
     });
