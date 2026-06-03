@@ -31,8 +31,6 @@
     controls.dampingFactor  = 0.06;
     controls.minDistance    = 1;
     controls.maxDistance    = 20;
-    controls.autoRotate     = true;
-    controls.autoRotateSpeed = 1.2;
 
     // ─── Lighting ─────────────────────────────────────────────────
     scene.add(new THREE.AmbientLight(0x202040, 1.5));
@@ -119,7 +117,7 @@
     let modelGroup = null;
     let carGroup   = null;
 
-    // Load Sahil model (centered / slightly to the right)
+    // Load Sahil model
     const sahilLoader = new THREE.GLTFLoader();
     sahilLoader.load(
       SAHIL_URL,
@@ -135,8 +133,6 @@
         model.scale.setScalar(scale);
         model.position.sub(center.multiplyScalar(scale));
         model.position.y += size.y * scale * 0.5;
-
-        // Shift slightly to the right to make room for car on the left
         model.position.x += 1.8;
 
         model.traverse((child) => {
@@ -170,7 +166,6 @@
       (gltf) => {
         const car = gltf.scene;
 
-        // Auto-center and scale
         const box    = new THREE.Box3().setFromObject(car);
         const size   = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
@@ -179,9 +174,7 @@
 
         car.scale.setScalar(scale);
         car.position.sub(center.multiplyScalar(scale));
-        car.position.y += size.y * scale * 0.5; // sit on ground
-
-        // Position to the LEFT of the Sahil model
+        car.position.y += size.y * scale * 0.5;
         car.position.x -= 1.8;
 
         car.traverse((child) => {
@@ -201,7 +194,6 @@
       },
       (err) => {
         console.warn('Car model load failed:', err);
-        // Fallback: simple box car placeholder
         const group = new THREE.Group();
 
         const bodyGeo = new THREE.BoxGeometry(1.8, 0.7, 0.9);
@@ -257,53 +249,47 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    // ─── Car Square Path ──────────────────────────────────────────
+    const SQUARE_SIZE = 3.5;
+    const CENTER_X    = 1.8;
+    const CENTER_Z    = 0;
+    const CAR_SPEED   = 0.02;
+
+    const squareWaypoints = [
+      new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
+      new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
+      new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
+      new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
+    ];
+
+    let waypointIndex = 0;
+
     // ─── Render loop ──────────────────────────────────────────────
     const clock = new THREE.Clock();
 
     function animate() {
-      // ─── Car Square Path ──────────────────────────────────────────
-const SQUARE_SIZE = 3.5;
-const CENTER_X    = 1.8;
-const CENTER_Z    = 0;
-const CAR_SPEED   = 0.02;
+      requestAnimationFrame(animate);
 
-const squareWaypoints = [
-  new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
-  new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
-  new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
-  new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
-];
+      if (carGroup) {
+        const target = squareWaypoints[waypointIndex];
+        const carPos = carGroup.position;
+        const dx     = target.x - carPos.x;
+        const dz     = target.z - carPos.z;
+        const dist   = Math.sqrt(dx * dx + dz * dz);
 
-let waypointIndex = 0;
+        if (dist < 0.1) {
+          carGroup.position.x = target.x;
+          carGroup.position.z = target.z;
+          waypointIndex = (waypointIndex + 1) % squareWaypoints.length;
+        } else {
+          carGroup.position.x += (dx / dist) * CAR_SPEED;
+          carGroup.position.z += (dz / dist) * CAR_SPEED;
+          carGroup.rotation.y = Math.atan2(dx, dz);
+        }
+      }
 
-// ─── Render loop ──────────────────────────────────────────────
-const clock = new THREE.Clock();
-
-function animate() {
-  requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
-
-  if (carGroup) {
-    const target = squareWaypoints[waypointIndex];
-    const carPos = carGroup.position;
-    const dx     = target.x - carPos.x;
-    const dz     = target.z - carPos.z;
-    const dist   = Math.sqrt(dx * dx + dz * dz);
-
-    if (dist < 0.1) {
-      carGroup.position.x = target.x;
-      carGroup.position.z = target.z;
-      waypointIndex = (waypointIndex + 1) % squareWaypoints.length;
-    } else {
-      carGroup.position.x += (dx / dist) * CAR_SPEED;
-      carGroup.position.z += (dz / dist) * CAR_SPEED;
-      carGroup.rotation.y = Math.atan2(dx, dz);
+      controls.update();
+      renderer.render(scene, camera);
     }
-  }
 
-  controls.update();
-  renderer.render(scene, camera);
-}
-
-animate();
-    }
+    animate();
