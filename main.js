@@ -175,7 +175,7 @@
         const size   = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale  = 2 / maxDim;
+        const scale  = 3.5 / maxDim;
 
         car.scale.setScalar(scale);
         car.position.sub(center.multiplyScalar(scale));
