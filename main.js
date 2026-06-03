@@ -254,98 +254,46 @@
     });
 
     // ─── Car Square Path ──────────────────────────────────────────
-   controls.enabled = false;
+    const SQUARE_SIZE = 3.5;
+    const CENTER_X    = 1.8;
+    const CENTER_Z    = 0;
+    const CAR_SPEED   = 0.06;
+
+    const squareWaypoints = [
+      new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
+      new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
+      new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
+      new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
+    ];
+
+    let waypointIndex = 0;
 
     // ─── Render loop ──────────────────────────────────────────────
+    const clock = new THREE.Clock();
 
-const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
 
-function animate() {
+      if (carGroup) {
+        const target = squareWaypoints[waypointIndex];
+        const carPos = carGroup.position;
+        const dx     = target.x - carPos.x;
+        const dz     = target.z - carPos.z;
+        const dist   = Math.sqrt(dx * dx + dz * dz);
 
-  requestAnimationFrame(animate);
-
-  const delta = clock.getDelta();
-
-  // Car controls
-  if (carGroup) {
-
-    // Accelerate
-    if (keys.w) {
-      carSpeed += acceleration;
-    }
-
-    // Reverse
-    if (keys.s) {
-      carSpeed -= acceleration;
-    }
-
-    // Friction
-    if (!keys.w && !keys.s) {
-
-      if (carSpeed > 0) {
-        carSpeed -= brakeForce;
+        if (dist < 0.1) {
+          carGroup.position.x = target.x;
+          carGroup.position.z = target.z;
+          waypointIndex = (waypointIndex + 1) % squareWaypoints.length;
+        } else {
+          carGroup.position.x += (dx / dist) * CAR_SPEED;
+          carGroup.position.z += (dz / dist) * CAR_SPEED;
+          carGroup.rotation.y = Math.atan2(dx, dz);
+        }
       }
 
-      if (carSpeed < 0) {
-        carSpeed += brakeForce;
-      }
-
-      if (Math.abs(carSpeed) < 0.001) {
-        carSpeed = 0;
-      }
+      controls.update();
+      renderer.render(scene, camera);
     }
 
-    // Clamp speed
-    carSpeed = Math.max(
-      -maxSpeed * 0.5,
-      Math.min(maxSpeed, carSpeed)
-    );
-
-    // Steering
-    if (keys.a) {
-      carGroup.rotation.y += turnSpeed;
-    }
-
-    if (keys.d) {
-      carGroup.rotation.y -= turnSpeed;
-    }
-
-    // Move car
-    carGroup.position.x +=
-      Math.sin(carGroup.rotation.y) * carSpeed;
-
-    carGroup.position.z +=
-      Math.cos(carGroup.rotation.y) * carSpeed;
-
-    // Camera follow
-    const cameraOffset = new THREE.Vector3(
-      0,
-      2.5,
-      -6
-    );
-
-    cameraOffset.applyAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      carGroup.rotation.y
-    );
-
-    const targetCameraPos =
-      carGroup.position.clone().add(cameraOffset);
-
-    camera.position.lerp(
-      targetCameraPos,
-      0.08
-    );
-
-    camera.lookAt(
-      carGroup.position.x,
-      carGroup.position.y + 1,
-      carGroup.position.z
-    );
-  }
-
-  controls.update();
-  renderer.render(scene, camera);
-}
-
-animate();
+    animate();
