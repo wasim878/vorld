@@ -158,7 +158,7 @@
     );
 
     // ─── Car (WagonR) Model ───────────────────────────────────────
-    const CAR_URL = './wagonR.glb';
+    const CAR_URL = './swift.glb';
 
     const carLoader = new THREE.GLTFLoader();
     carLoader.load(
