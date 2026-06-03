@@ -117,8 +117,6 @@
     let modelGroup = null;
     let carGroup   = null;
 
-    let sahilMixer = null;
-
     // Load Sahil model
     const sahilLoader = new THREE.GLTFLoader();
     sahilLoader.load(
@@ -144,14 +142,6 @@
     console.log("Bone Count:", boneCount);
 
     const model = gltf.scene;
-
-    sahilMixer = new THREE.AnimationMixer(model);
-
-const idleAction = sahilMixer.clipAction(
-    gltf.animations[0]
-);
-
-idleAction.play();
 
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
@@ -303,12 +293,6 @@ sahilLoader.load(
 
     function animate() {
       requestAnimationFrame(animate);
-
-      const delta = clock.getDelta();
-
-if (sahilMixer) {
-    sahilMixer.update(delta);
-}
 
       if (carGroup) {
         const target = squareWaypoints[waypointIndex];
