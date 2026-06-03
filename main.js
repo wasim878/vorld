@@ -261,11 +261,49 @@
     const clock = new THREE.Clock();
 
     function animate() {
-      requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
+      // ─── Car Square Path ──────────────────────────────────────────
+const SQUARE_SIZE = 3.5;
+const CENTER_X    = 1.8;
+const CENTER_Z    = 0;
+const CAR_SPEED   = 0.02;
 
-      controls.update();
-      renderer.render(scene, camera);
+const squareWaypoints = [
+  new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
+  new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
+  new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
+  new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
+];
+
+let waypointIndex = 0;
+
+// ─── Render loop ──────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  if (carGroup) {
+    const target = squareWaypoints[waypointIndex];
+    const carPos = carGroup.position;
+    const dx     = target.x - carPos.x;
+    const dz     = target.z - carPos.z;
+    const dist   = Math.sqrt(dx * dx + dz * dz);
+
+    if (dist < 0.1) {
+      carGroup.position.x = target.x;
+      carGroup.position.z = target.z;
+      waypointIndex = (waypointIndex + 1) % squareWaypoints.length;
+    } else {
+      carGroup.position.x += (dx / dist) * CAR_SPEED;
+      carGroup.position.z += (dz / dist) * CAR_SPEED;
+      carGroup.rotation.y = Math.atan2(dx, dz);
     }
+  }
 
-    animate();
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+    }
