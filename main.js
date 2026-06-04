@@ -97,21 +97,7 @@
             child.receiveShadow = true;
           }
           // Target common arm/hand bone names and rotate them down
-          if (child.isBone || child.type === 'Bone') {
-            const name = child.name.toLowerCase();
-            if (name.includes('upperarm') || name.includes('upper_arm') || name.includes('arm')) {
-              child.rotation.z = name.includes('left') || name.includes('_l') ? -1.4 : 1.4;
-            }
-            if (name.includes('forearm') || name.includes('lower_arm')) {
-              child.rotation.z = 0;
-              child.rotation.x = 0;
-            }
-            if (name.includes('hand') || name.includes('wrist')) {
-              child.rotation.z = 0;
-              child.rotation.x = 0;
-            }
-          }
-        });
+         
 
         scene.add(model);
         modelGroup = model;
