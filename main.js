@@ -3,7 +3,7 @@
     const loadingEl = document.getElementById('loading');
 
     const scene    = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5);
+    scene.background = new THREE.Color(0x0a0a0f);
     scene.fog        = new THREE.FogExp2(0x0a0a0f, 0.04);
 
     // Camera
@@ -13,7 +13,7 @@
       0.1,
       1000
     );
-    camera.position.set(0, 1.5, 5);
+    camera.position.set(0, 3, 8);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -24,13 +24,6 @@
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
     container.appendChild(renderer.domElement);
-
-    // Orbit controls
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping  = true;
-    controls.dampingFactor  = 0.06;
-    controls.minDistance    = 1;
-    controls.maxDistance    = 20;
 
     // ─── Lighting ─────────────────────────────────────────────────
     scene.add(new THREE.AmbientLight(0x202040, 1.5));
@@ -49,9 +42,9 @@
     scene.add(new THREE.PointLight(0x4488ff, 0.8, 12));
 
     // ─── Ground plane ─────────────────────────────────────────────
-    const groundGeo = new THREE.PlaneGeometry(20, 20);
+    const groundGeo = new THREE.PlaneGeometry(40, 40);
     const groundMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: 0x111120,
       roughness: 0.9,
       metalness: 0.1,
     });
@@ -61,7 +54,7 @@
     scene.add(ground);
 
     // ─── Grid helper ──────────────────────────────────────────────
-    const grid = new THREE.GridHelper(20, 30, 0x1a2a3a, 0x1a2a3a);
+    const grid = new THREE.GridHelper(40, 60, 0x1a2a3a, 0x1a2a3a);
     grid.position.y = 0.001;
     scene.add(grid);
 
@@ -76,122 +69,63 @@
       }
     }
 
-    // ─── Sahil Model ──────────────────────────────────────────────
-    const SAHIL_URL = './Sahilmodel.glb';
-
-    function addPlaceholderModel() {
-      const group = new THREE.Group();
-
-      const geo = new THREE.IcosahedronGeometry(1, 1);
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0x2255aa,
-        roughness: 0.3,
-        metalness: 0.8,
-        envMapIntensity: 1,
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.castShadow = true;
-      group.add(mesh);
-
-      const wireMat = new THREE.MeshBasicMaterial({
-        color: 0x7df3c0,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.25,
-      });
-      group.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 1), wireMat));
-
-      const ringGeo = new THREE.TorusGeometry(1.6, 0.03, 8, 64);
-      const ringMat = new THREE.MeshStandardMaterial({ color: 0x7df3c0, emissive: 0x3a9970, roughness: 0.4 });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = Math.PI / 3;
-      group.add(ring);
-
-      group.position.y = 1;
-      scene.add(group);
-      onModelLoaded();
-
-      return group;
-    }
-
+    // ─── Models ───────────────────────────────────────────────────
     let modelGroup = null;
     let carGroup   = null;
 
-    let sahilMixer = null;
-
-    // Load Sahil model
+    // Sahil model
     const sahilLoader = new THREE.GLTFLoader();
     sahilLoader.load(
-  SAHIL_URL,
-  (gltf) => {
+      './Sahilmodel.glb',
+      (gltf) => {
+        const model = gltf.scene;
+        const box    = new THREE.Box3().setFromObject(model);
+        const size   = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale  = 2 / maxDim;
 
-    console.log("========== MODEL INFO ==========");
-    console.log("Animations:", gltf.animations);
-    console.log("Animation Count:", gltf.animations.length);
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+        model.position.y += size.y * scale * 0.5;
+        model.position.set(0, 0, 0);
 
-    gltf.animations.forEach((clip, index) => {
-      console.log(`Animation ${index}: ${clip.name}`);
-    });
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow    = true;
+            child.receiveShadow = true;
+          }
+        });
 
-    let boneCount = 0;
-
-    gltf.scene.traverse((child) => {
-      if (child.isBone) {
-        boneCount++;
+        scene.add(model);
+        modelGroup = model;
+        onModelLoaded();
+      },
+      (xhr) => {
+        loadingEl.textContent = `Loading Sahil… ${Math.round((xhr.loaded / xhr.total) * 100)}%`;
+      },
+      (err) => {
+        console.warn('Sahil load failed:', err);
+        // Placeholder capsule
+        const group = new THREE.Group();
+        const geo = new THREE.CapsuleGeometry(0.4, 1.2, 8, 16);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.4, metalness: 0.6 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = 1;
+        mesh.castShadow = true;
+        group.add(mesh);
+        scene.add(group);
+        modelGroup = group;
+        onModelLoaded();
       }
-    });
-
-    console.log("Bone Count:", boneCount);
-
-    const model = gltf.scene;
-
-    // Play built-in animation
-
-if (gltf.animations.length > 0) {
-
-    sahilMixer = new THREE.AnimationMixer(model);
-
-    const idleAction = sahilMixer.clipAction(
-        gltf.animations[0]
     );
 
-    idleAction.play();
-
-    console.log(
-        "Playing animation:",
-        gltf.animations[0].name
-    );
-
-    console.log(gltf.animations[0].tracks);
-}
-
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 2 / maxDim;
-
-    model.scale.setScalar(scale);
-    model.position.sub(center.multiplyScalar(scale));
-    model.position.y += size.y * scale * 0.5;
-    model.position.x += 1.8;
-
-    scene.add(model);
-    modelGroup = model;
-
-    onModelLoaded();
-  }
-);
-
-    // ─── Car (WagonR) Model ───────────────────────────────────────
-    const CAR_URL = './wagonR.glb';
-
+    // Car model
     const carLoader = new THREE.GLTFLoader();
     carLoader.load(
-      CAR_URL,
+      './wagonR.glb',
       (gltf) => {
         const car = gltf.scene;
-
         const box    = new THREE.Box3().setFromObject(car);
         const size   = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
@@ -201,7 +135,7 @@ if (gltf.animations.length > 0) {
         car.scale.setScalar(scale);
         car.position.sub(center.multiplyScalar(scale));
         car.position.y += size.y * scale * 0.5;
-        car.position.x -= 1.8;
+        car.position.set(6, 0, 0);
 
         car.traverse((child) => {
           if (child.isMesh) {
@@ -215,43 +149,23 @@ if (gltf.animations.length > 0) {
         onModelLoaded();
       },
       (xhr) => {
-        const pct = Math.round((xhr.loaded / xhr.total) * 100);
-        loadingEl.textContent = `Loading Car… ${pct}%`;
+        loadingEl.textContent = `Loading Car… ${Math.round((xhr.loaded / xhr.total) * 100)}%`;
       },
       (err) => {
-        console.warn('Car model load failed:', err);
+        console.warn('Car load failed:', err);
         const group = new THREE.Group();
-
-        const bodyGeo = new THREE.BoxGeometry(1.8, 0.7, 0.9);
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc2200, roughness: 0.4, metalness: 0.6 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.45;
-        body.castShadow = true;
-        group.add(body);
-
-        const roofGeo = new THREE.BoxGeometry(1.0, 0.5, 0.85);
-        const roof = new THREE.Mesh(roofGeo, bodyMat);
-        roof.position.set(-0.1, 1.0, 0);
-        roof.castShadow = true;
-        group.add(roof);
-
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 0.9), bodyMat);
+        body.position.y = 0.45; body.castShadow = true; group.add(body);
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.5, 0.85), bodyMat);
+        roof.position.set(-0.1, 1.0, 0); roof.castShadow = true; group.add(roof);
         const wheelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 16);
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
-        const wheelPositions = [
-          [ 0.6, 0.25,  0.52],
-          [-0.6, 0.25,  0.52],
-          [ 0.6, 0.25, -0.52],
-          [-0.6, 0.25, -0.52],
-        ];
-        wheelPositions.forEach(([x, y, z]) => {
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        [[ 0.6,0.25, 0.52],[-0.6,0.25, 0.52],[ 0.6,0.25,-0.52],[-0.6,0.25,-0.52]].forEach(([x,y,z]) => {
           const w = new THREE.Mesh(wheelGeo, wheelMat);
-          w.rotation.z = Math.PI / 2;
-          w.position.set(x, y, z);
-          w.castShadow = true;
-          group.add(w);
+          w.rotation.z = Math.PI / 2; w.position.set(x,y,z); w.castShadow = true; group.add(w);
         });
-
-        group.position.x = -1.8;
+        group.position.set(6, 0, 0);
         scene.add(group);
         carGroup = group;
         onModelLoaded();
@@ -262,9 +176,7 @@ if (gltf.animations.length > 0) {
     const starGeo = new THREE.BufferGeometry();
     const starCount = 1200;
     const starPos = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i++) {
-      starPos[i] = (Math.random() - 0.5) * 80;
-    }
+    for (let i = 0; i < starCount * 3; i++) starPos[i] = (Math.random() - 0.5) * 80;
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
     scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.05 })));
 
@@ -275,52 +187,95 @@ if (gltf.animations.length > 0) {
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // ─── Car Square Path ──────────────────────────────────────────
-    const SQUARE_SIZE = 3.5;
-    const CENTER_X    = 1.8;
-    const CENTER_Z    = 0;
-    const CAR_SPEED   = 0.06;
+    // ─── Input tracking ───────────────────────────────────────────
+    const keys = {};
+    window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+    window.addEventListener('keyup',   (e) => { keys[e.code] = false; });
 
-    const squareWaypoints = [
-      new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
-      new THREE.Vector3(CENTER_X + SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
-      new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z + SQUARE_SIZE),
-      new THREE.Vector3(CENTER_X - SQUARE_SIZE, 0, CENTER_Z - SQUARE_SIZE),
-    ];
+    // ─── Movement config ──────────────────────────────────────────
+    const CHAR_SPEED   = 0.06;
+    const CAR_SPEED    = 0.08;
+    const TURN_SPEED   = 0.03;
 
-    let waypointIndex = 0;
+    // Camera follow config
+    const CAM_OFFSET   = new THREE.Vector3(0, 3, 6);  // behind & above character
+    const CAM_LERP     = 0.08;                          // smoothness (lower = smoother)
+
+    // ─── HUD ──────────────────────────────────────────────────────
+    const hud = document.createElement('div');
+    hud.style.cssText = `
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      color: #7df3c0; font-family: monospace; font-size: 13px;
+      background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 8px;
+      border: 1px solid #7df3c020; pointer-events: none; text-align: center;
+      letter-spacing: 0.5px;
+    `;
+    hud.innerHTML = `
+      <b>CHARACTER</b>: WASD / Arrow Keys &nbsp;|&nbsp;
+      <b>CAR</b>: I J K L &nbsp;|&nbsp;
+      <b>CAMERA</b>: follows character
+    `;
+    document.body.appendChild(hud);
 
     // ─── Render loop ──────────────────────────────────────────────
     const clock = new THREE.Clock();
 
     function animate() {
       requestAnimationFrame(animate);
+      clock.getDelta(); // keep clock ticking
 
-      const delta = clock.getDelta();
+      // ── Character movement (WASD / Arrows) ──
+      if (modelGroup) {
+        let moved = false;
 
-if (sahilMixer) {
-    sahilMixer.update(delta);
-}
+        if (keys['KeyW'] || keys['ArrowUp']) {
+          modelGroup.position.x -= Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
+          modelGroup.position.z -= Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
+          moved = true;
+        }
+        if (keys['KeyS'] || keys['ArrowDown']) {
+          modelGroup.position.x += Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
+          modelGroup.position.z += Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
+          moved = true;
+        }
+        if (keys['KeyA'] || keys['ArrowLeft']) {
+          modelGroup.rotation.y += TURN_SPEED;
+        }
+        if (keys['KeyD'] || keys['ArrowRight']) {
+          modelGroup.rotation.y -= TURN_SPEED;
+        }
 
+        // ── 3rd person camera follow ──
+        const charPos = modelGroup.position;
+        const charRot = modelGroup.rotation.y;
+
+        // Rotate offset behind character based on facing direction
+        const camX = charPos.x + Math.sin(charRot) * CAM_OFFSET.z;
+        const camY = charPos.y + CAM_OFFSET.y;
+        const camZ = charPos.z + Math.cos(charRot) * CAM_OFFSET.z;
+
+        camera.position.lerp(new THREE.Vector3(camX, camY, camZ), CAM_LERP);
+        camera.lookAt(charPos.x, charPos.y + 1, charPos.z);
+      }
+
+      // ── Car movement (IJKL) ──
       if (carGroup) {
-        const target = squareWaypoints[waypointIndex];
-        const carPos = carGroup.position;
-        const dx     = target.x - carPos.x;
-        const dz     = target.z - carPos.z;
-        const dist   = Math.sqrt(dx * dx + dz * dz);
-
-        if (dist < 0.1) {
-          carGroup.position.x = target.x;
-          carGroup.position.z = target.z;
-          waypointIndex = (waypointIndex + 1) % squareWaypoints.length;
-        } else {
-          carGroup.position.x += (dx / dist) * CAR_SPEED;
-          carGroup.position.z += (dz / dist) * CAR_SPEED;
-          carGroup.rotation.y = Math.atan2(dx, dz);
+        if (keys['KeyI']) {
+          carGroup.position.x -= Math.sin(carGroup.rotation.y) * CAR_SPEED;
+          carGroup.position.z -= Math.cos(carGroup.rotation.y) * CAR_SPEED;
+        }
+        if (keys['KeyK']) {
+          carGroup.position.x += Math.sin(carGroup.rotation.y) * CAR_SPEED;
+          carGroup.position.z += Math.cos(carGroup.rotation.y) * CAR_SPEED;
+        }
+        if (keys['KeyJ']) {
+          carGroup.rotation.y += TURN_SPEED;
+        }
+        if (keys['KeyL']) {
+          carGroup.rotation.y -= TURN_SPEED;
         }
       }
 
-      controls.update();
       renderer.render(scene, camera);
     }
 
