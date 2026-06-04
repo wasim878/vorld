@@ -264,18 +264,18 @@
 
       // ── Character movement — S = forward, W = backward ──
       if (modelGroup) {
-        if (keys['KeyS'] || keys['ArrowDown']) {
+        if (keys['KeyS'] || mobileKeys.forward) {
           modelGroup.position.x -= Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
           modelGroup.position.z -= Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
         }
-        if (keys['KeyW'] || keys['ArrowUp']) {
+        if (keys['KeyW'] || mobileKeys.back) {
           modelGroup.position.x += Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
           modelGroup.position.z += Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
         }
-        if (keys['KeyA'] || keys['ArrowLeft']) {
+        if (keys['KeyA'] ||  mobileKeys.left) {
           modelGroup.rotation.y += TURN_SPEED;
         }
-        if (keys['KeyD'] || keys['ArrowRight']) {
+        if (keys['KeyD'] ||  mobileKeys.right) {
           modelGroup.rotation.y -= TURN_SPEED;
         }
 
@@ -313,3 +313,42 @@
     }
 
     animate();
+
+
+    const mobileKeys = {
+  forward:false,
+  back:false,
+  left:false,
+  right:false
+};
+
+function bindTouch(id,key){
+
+  const btn = document.getElementById(id);
+
+  btn.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    mobileKeys[key]=true;
+  });
+
+  btn.addEventListener('touchend',()=>{
+    mobileKeys[key]=false;
+  });
+}
+
+bindTouch('forward','forward');
+bindTouch('back','back');
+bindTouch('left','left');
+bindTouch('right','right');
+
+const menuBtn =
+document.getElementById('menu-btn');
+
+const menuPanel =
+document.getElementById('menu-panel');
+
+menuBtn.addEventListener('click',()=>{
+
+  menuPanel.classList.toggle('active');
+
+});
