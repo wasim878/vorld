@@ -97,7 +97,8 @@
             child.receiveShadow = true;
           }
           // Target common arm/hand bone names and rotate them down
-         
+        
+        });
 
         scene.add(model);
         modelGroup = model;
