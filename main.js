@@ -90,10 +90,26 @@
         model.position.y += size.y * scale * 0.5;
         model.position.set(0, 0, 0);
 
+        // ── Force arms/hands down ──
         model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow    = true;
             child.receiveShadow = true;
+          }
+          // Target common arm/hand bone names and rotate them down
+          if (child.isBone || child.type === 'Bone') {
+            const name = child.name.toLowerCase();
+            if (name.includes('upperarm') || name.includes('upper_arm') || name.includes('arm')) {
+              child.rotation.z = name.includes('left') || name.includes('_l') ? -1.4 : 1.4;
+            }
+            if (name.includes('forearm') || name.includes('lower_arm')) {
+              child.rotation.z = 0;
+              child.rotation.x = 0;
+            }
+            if (name.includes('hand') || name.includes('wrist')) {
+              child.rotation.z = 0;
+              child.rotation.x = 0;
+            }
           }
         });
 
@@ -106,14 +122,21 @@
       },
       (err) => {
         console.warn('Sahil load failed:', err);
-        // Placeholder capsule
         const group = new THREE.Group();
-        const geo = new THREE.CapsuleGeometry(0.4, 1.2, 8, 16);
-        const mat = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.4, metalness: 0.6 });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.y = 1;
-        mesh.castShadow = true;
-        group.add(mesh);
+        // Body
+        const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.2, 16);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.4, metalness: 0.6 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 1.0; body.castShadow = true; group.add(body);
+        // Head
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), bodyMat);
+        head.position.y = 1.9; head.castShadow = true; group.add(head);
+        // Arms down
+        const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.8, 8);
+        const lArm = new THREE.Mesh(armGeo, bodyMat);
+        lArm.position.set(-0.45, 0.9, 0); lArm.castShadow = true; group.add(lArm);
+        const rArm = new THREE.Mesh(armGeo, bodyMat);
+        rArm.position.set( 0.45, 0.9, 0); rArm.castShadow = true; group.add(rArm);
         scene.add(group);
         modelGroup = group;
         onModelLoaded();
@@ -193,13 +216,41 @@
     window.addEventListener('keyup',   (e) => { keys[e.code] = false; });
 
     // ─── Movement config ──────────────────────────────────────────
-    const CHAR_SPEED   = 0.06;
-    const CAR_SPEED    = 0.08;
-    const TURN_SPEED   = 0.03;
+    const CHAR_SPEED = 0.06;
+    const CAR_SPEED  = 0.08;
+    const TURN_SPEED = 0.03;
 
-    // Camera follow config
-    const CAM_OFFSET   = new THREE.Vector3(0, 3, 6);  // behind & above character
-    const CAM_LERP     = 0.08;                          // smoothness (lower = smoother)
+    // ─── Camera orbit state ───────────────────────────────────────
+    // Mouse drag to orbit around character
+    let orbitYaw   = 0;      // left/right angle around character
+    let orbitPitch = 0.35;   // up/down angle (radians)
+    let orbitDist  = 6;      // distance from character
+    let isMouseDown = false;
+    let lastMouseX  = 0;
+    let lastMouseY  = 0;
+
+    renderer.domElement.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      lastMouseX  = e.clientX;
+      lastMouseY  = e.clientY;
+    });
+    window.addEventListener('mouseup',   () => { isMouseDown = false; });
+    window.addEventListener('mousemove', (e) => {
+      if (!isMouseDown) return;
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
+      orbitYaw   -= dx * 0.005;
+      orbitPitch -= dy * 0.005;
+      orbitPitch  = Math.max(-0.1, Math.min(1.2, orbitPitch)); // clamp pitch
+      lastMouseX  = e.clientX;
+      lastMouseY  = e.clientY;
+    });
+
+    // Scroll to zoom
+    window.addEventListener('wheel', (e) => {
+      orbitDist += e.deltaY * 0.01;
+      orbitDist  = Math.max(2, Math.min(20, orbitDist));
+    });
 
     // ─── HUD ──────────────────────────────────────────────────────
     const hud = document.createElement('div');
@@ -211,9 +262,9 @@
       letter-spacing: 0.5px;
     `;
     hud.innerHTML = `
-      <b>CHARACTER</b>: WASD / Arrow Keys &nbsp;|&nbsp;
-      <b>CAR</b>: I J K L &nbsp;|&nbsp;
-      <b>CAMERA</b>: follows character
+      <b>CHARACTER</b>: W/S = forward/back &nbsp; A/D = turn &nbsp;|&nbsp;
+      <b>CAR</b>: I/K = forward/back &nbsp; J/L = turn &nbsp;|&nbsp;
+      <b>CAMERA</b>: drag mouse to orbit &nbsp; scroll to zoom
     `;
     document.body.appendChild(hud);
 
@@ -222,21 +273,17 @@
 
     function animate() {
       requestAnimationFrame(animate);
-      clock.getDelta(); // keep clock ticking
+      clock.getDelta();
 
-      // ── Character movement (WASD / Arrows) ──
+      // ── Character movement — S = forward, W = backward ──
       if (modelGroup) {
-        let moved = false;
-
-        if (keys['KeyW'] || keys['ArrowUp']) {
+        if (keys['KeyS'] || keys['ArrowDown']) {
           modelGroup.position.x -= Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
           modelGroup.position.z -= Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
-          moved = true;
         }
-        if (keys['KeyS'] || keys['ArrowDown']) {
+        if (keys['KeyW'] || keys['ArrowUp']) {
           modelGroup.position.x += Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
           modelGroup.position.z += Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
-          moved = true;
         }
         if (keys['KeyA'] || keys['ArrowLeft']) {
           modelGroup.rotation.y += TURN_SPEED;
@@ -245,26 +292,25 @@
           modelGroup.rotation.y -= TURN_SPEED;
         }
 
-        // ── 3rd person camera follow ──
+        // ── Orbit camera around character ──
         const charPos = modelGroup.position;
-        const charRot = modelGroup.rotation.y;
+        const totalYaw = modelGroup.rotation.y + orbitYaw;
 
-        // Rotate offset behind character based on facing direction
-        const camX = charPos.x + Math.sin(charRot) * CAM_OFFSET.z;
-        const camY = charPos.y + CAM_OFFSET.y;
-        const camZ = charPos.z + Math.cos(charRot) * CAM_OFFSET.z;
+        const camX = charPos.x + Math.sin(totalYaw) * orbitDist * Math.cos(orbitPitch);
+        const camY = charPos.y + Math.sin(orbitPitch) * orbitDist;
+        const camZ = charPos.z + Math.cos(totalYaw) * orbitDist * Math.cos(orbitPitch);
 
-        camera.position.lerp(new THREE.Vector3(camX, camY, camZ), CAM_LERP);
+        camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.08);
         camera.lookAt(charPos.x, charPos.y + 1, charPos.z);
       }
 
-      // ── Car movement (IJKL) ──
+      // ── Car movement — K = forward, I = backward ──
       if (carGroup) {
-        if (keys['KeyI']) {
+        if (keys['KeyK']) {
           carGroup.position.x -= Math.sin(carGroup.rotation.y) * CAR_SPEED;
           carGroup.position.z -= Math.cos(carGroup.rotation.y) * CAR_SPEED;
         }
-        if (keys['KeyK']) {
+        if (keys['KeyI']) {
           carGroup.position.x += Math.sin(carGroup.rotation.y) * CAR_SPEED;
           carGroup.position.z += Math.cos(carGroup.rotation.y) * CAR_SPEED;
         }
