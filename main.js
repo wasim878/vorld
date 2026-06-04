@@ -264,11 +264,11 @@
 
       // ── Character movement — S = forward, W = backward ──
       if (modelGroup) {
-        if (keys['KeyS'] || mobileKeys.forward) {
+        if (keys['KeyS'] || mobileKeys.back) {
           modelGroup.position.x -= Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
           modelGroup.position.z -= Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
         }
-        if (keys['KeyW'] || mobileKeys.back) {
+        if (keys['KeyW'] || mobileKeys.forward) {
           modelGroup.position.x += Math.sin(modelGroup.rotation.y) * CHAR_SPEED;
           modelGroup.position.z += Math.cos(modelGroup.rotation.y) * CHAR_SPEED;
         }
